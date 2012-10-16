@@ -22,7 +22,7 @@ class Input(threading.Thread):
 
 class Capture(object):
     pass
-
+      
 class Plotter(gtk.DrawingArea):
 
     def __init__(self):
@@ -43,6 +43,24 @@ class Plotter(gtk.DrawingArea):
         x, y, width, height = event.area
         self.window.draw_drawable(self.get_style().fg_gc[gtk.STATE_NORMAL], self.pixmap, x, y, x, y, width, height)
         return False
+
+class RulerPlotter(gtk.Table):
+
+    def __init__(self):
+        super(RulerPlotter, self).__init__(3, 2, False)
+        self.plotter = Plotter()
+        self.attach(self.plotter, 1, 2, 1, 2, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0)
+        self.hrule = gtk.HRuler()
+        self.hrule.set_metric(gtk.PIXELS)
+        self.hrule.set_range(0, 800, 0, 800)
+        self.plotter.connect_object("motion-notify-event", lambda r, e : r.emit("motion-notify-event", e), self.hrule)
+        self.attach(self.hrule, 1, 2, 0, 1, gtk.EXPAND|gtk.SHRINK|gtk.FILL, gtk.FILL, 0, 0)
+        self.vrule = gtk.VRuler()
+        self.vrule.set_metric(gtk.PIXELS)
+        self.vrule.set_range(0, 800, 0, 800)
+        self.plotter.connect_object("motion-notify-event", lambda r, e : r.emit("motion-notify-event", e), self.vrule)
+        self.attach(self.vrule, 0, 1, 1, 2, gtk.FILL, gtk.EXPAND|gtk.SHRINK|gtk.FILL, 0, 0)
+
 
 class Kapa(gtk.Window):
 
@@ -103,24 +121,9 @@ class Kapa(gtk.Window):
 
         self.vbox.pack_start(self.toolbar, False, False, 0)
 
-        self.table = gtk.Table(3, 2, False)
+        self.plotter = RulerPlotter()
 
-        self.plotter = Plotter()
-        self.table.attach(self.plotter, 1, 2, 1, 2, gtk.EXPAND|gtk.FILL, gtk.FILL, 0, 0)
-        self.plotter.set_events(gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK)
-        self.hrule = gtk.HRuler()
-        self.hrule.set_metric(gtk.PIXELS)
-        self.hrule.set_range(0, 800, 0, 800)
-        self.plotter.connect_object("motion-notify-event", lambda r, e : r.emit("motion-notify-event", e), self.hrule)
-        self.table.attach(self.hrule, 1, 2, 0, 1, gtk.EXPAND|gtk.SHRINK|gtk.FILL, gtk.FILL, 0, 0)
-
-        self.vrule = gtk.VRuler()
-        self.vrule.set_metric(gtk.PIXELS)
-        self.vrule.set_range(0, 800, 0, 800)
-        self.plotter.connect_object("motion-notify-event", lambda r, e : r.emit("motion-notify-event", e), self.vrule)
-        self.table.attach(self.vrule, 0, 1, 1, 2, gtk.FILL, gtk.EXPAND|gtk.SHRINK|gtk.FILL, 0, 0)
-
-        self.vbox.pack_start(self.table, True, True, 0)
+        self.vbox.pack_start(self.plotter, True, True, 0)
 
         self.statusbar = gtk.Statusbar()
         self.statusbar_context_id = self.statusbar.get_context_id("Anwendung")
@@ -129,8 +132,6 @@ class Kapa(gtk.Window):
         self.add(self.vbox)
 
         self.show_all()
-
-        self.show()
 
         
     def __init__(self):
